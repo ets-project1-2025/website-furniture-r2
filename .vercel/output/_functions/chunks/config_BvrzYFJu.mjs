@@ -1,8 +1,4 @@
 // src/i18n/config.js
-const locales = {
-  'id': 'Bahasa Indonesia',
-  'en': 'English'
-};
 
 const defaultLocale = 'id';
 
@@ -204,4 +200,4 @@ const getMessages = (locale) => {
   return messages[locale] || messages['id']; // Default to Indonesian if locale not found
 };
 
-export { defaultLocale as d, getMessages as g, locales as l };
+export { defaultLocale as d, getMessages as g };

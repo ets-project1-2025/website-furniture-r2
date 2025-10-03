@@ -1,0 +1,11 @@
+---
+import { supabase } from '../../lib/supabaseClient';
+
+export const prerender = false;
+
+// Sign out the user
+await supabase.auth.signOut();
+
+// Redirect to home page after logout
+return Astro.redirect('/');
+---

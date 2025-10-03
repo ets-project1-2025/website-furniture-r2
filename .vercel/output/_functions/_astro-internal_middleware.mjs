@@ -1,6 +1,4 @@
 import { d as defineMiddleware, s as sequence } from './chunks/index_zG0fFTjl.mjs';
-import { s as supabase } from './chunks/supabaseClient_DdVNsowi.mjs';
-import { l as locales, d as defaultLocale } from './chunks/config_wYDGN0uF.mjs';
 import 'es-module-lexer';
 import './chunks/astro-designed-error-pages_CCSgdXEr.mjs';
 import 'kleur/colors';
@@ -9,37 +7,8 @@ import 'clsx';
 import 'cookie';
 
 const onRequest$1 = defineMiddleware(async (context, next) => {
-  try {
-    const pathParts = context.url.pathname.split("/").filter((part) => part !== "");
-    const hasLocale = pathParts.length > 0 && locales[pathParts[0]];
-    if (!hasLocale && !context.url.pathname.startsWith("/admin") && !context.url.pathname.startsWith("/login")) {
-      const newPath = `/${defaultLocale}${context.url.pathname}`;
-      return context.redirect(newPath);
-    }
-    if (context.url.pathname.startsWith("/admin") || context.url.pathname.startsWith("/id/admin") || context.url.pathname.startsWith("/en/admin")) {
-      if (!supabase || typeof supabase.auth.getSession !== "function") {
-        console.error("Supabase client not properly initialized");
-        return context.redirect("/");
-      }
-      try {
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session) {
-          return context.redirect("/login");
-        }
-        const { data: profile, error: profileError } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
-        if (profileError || !profile || profile.full_name !== "Admin") {
-          return context.redirect("/");
-        }
-      } catch (error) {
-        console.error("Error in admin middleware:", error);
-        return context.redirect("/");
-      }
-    }
-    return next();
-  } catch (error) {
-    console.error("Unexpected error in middleware:", error);
-    return new Response("Internal Server Error", { status: 500 });
-  }
+  if (context.url.pathname.startsWith("/admin")) ;
+  return next();
 });
 
 const onRequest = sequence(

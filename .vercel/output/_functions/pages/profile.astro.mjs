@@ -1,4 +1,3 @@
-/* empty css                                 */
 import { e as createComponent, f as createAstro, k as renderHead, l as renderScript, h as addAttribute, r as renderTemplate } from '../chunks/astro/server_Z03RFxYs.mjs';
 import 'kleur/colors';
 import 'clsx';

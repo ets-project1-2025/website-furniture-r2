@@ -1,8 +1,7 @@
-/* empty css                                 */
 import { e as createComponent, f as createAstro, h as addAttribute, k as renderHead, r as renderTemplate } from '../chunks/astro/server_Z03RFxYs.mjs';
 import 'kleur/colors';
 import 'clsx';
-import { g as getMessages } from '../chunks/config_wYDGN0uF.mjs';
+import { g as getMessages } from '../chunks/config_BvrzYFJu.mjs';
 import { s as supabase } from '../chunks/supabaseClient_DdVNsowi.mjs';
 export { renderers } from '../renderers.mjs';
 

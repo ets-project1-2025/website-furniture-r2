@@ -1,0 +1,264 @@
+---
+import { supabase } from '../../lib/supabaseClient';
+
+export const prerender = false;
+
+// Get gallery ID from URL
+const galleryId = Astro.params.id;
+
+// Get gallery details
+const { data: gallery, error: galleryError } = await supabase
+  .from('lookbook_galleries')
+  .select('id, title, description, cover_image_url')
+  .eq('id', galleryId)
+  .eq('is_active', true)
+  .single();
+
+if (galleryError || !gallery) {
+  // If gallery not found, redirect to lookbooks list
+  return Astro.redirect('/lookbooks');
+}
+
+// Get all hotspots for this gallery with product details
+const { data: hotspots, error: hotspotsError } = await supabase
+  .from('lookbook_hotspots')
+  .select(`
+    id,
+    coordinates,
+    hotspot_label,
+    products(id, name, price, is_active)
+  `)
+  .eq('gallery_id', galleryId)
+  .eq('products.is_active', true);
+
+if (hotspotsError) {
+  console.error('Error fetching hotspots:', hotspotsError);
+}
+
+// Get related galleries
+const { data: relatedGalleries, error: relatedError } = await supabase
+  .from('lookbook_galleries')
+  .select('id, title, cover_image_url')
+  .eq('is_active', true)
+  .neq('id', galleryId)
+  .limit(3);
+
+if (relatedError) {
+  console.error('Error fetching related galleries:', relatedError);
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{gallery.title} | Lookbooks | WIDI Furniture</title>
+    <meta name="description" content="{gallery.description}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/src/styles/global.css" />
+    <style>
+      .hotspot-image-container {
+        position: relative;
+        display: inline-block;
+        margin: 20px 0;
+        width: 100%;
+      }
+      
+      .hotspot-marker {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        background-color: #f59e0b;
+        border: 3px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 0 0 3px #fef3c7, 0 2px 4px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+        z-index: 10;
+      }
+      
+      .hotspot-marker:hover {
+        background-color: #d97706;
+        transform: translate(-50%, -50%) scale(1.2);
+        z-index: 20;
+      }
+      
+      .hotspot-popup {
+        position: absolute;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        padding: 1rem;
+        width: 250px;
+        z-index: 30;
+        display: none;
+      }
+      
+      .hotspot-popup.visible {
+        display: block;
+      }
+      
+      .hotspot-popup img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 0.25rem;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="bg-amber-100 shadow-md py-4 px-6">
+      <nav class="flex justify-between items-center">
+        <a href="/" class="text-2xl font-bold text-amber-900">WIDI Furniture</a>
+        <ul class="flex space-x-6">
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/">Home</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/products">Products</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors font-semibold" href="/lookbooks">Lookbooks</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/about">About</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/contact">Contact</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/login">Login</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="py-8 px-6 flex-grow">
+      <div class="max-w-7xl mx-auto">
+        <div class="mb-6">
+          <a href="/lookbooks" class="text-amber-700 hover:underline">&larr; Back to Lookbooks</a>
+        </div>
+        
+        <h1 class="text-3xl font-bold text-amber-900 mb-2">{gallery.title}</h1>
+        <p class="text-gray-600 mb-8">{gallery.description}</p>
+        
+        <div class="hotspot-image-container">
+          <img 
+            src={gallery.cover_image_url} 
+            alt={gallery.title} 
+            class="w-full h-auto rounded-lg shadow-md"
+            id="lookbookImage"
+          />
+          
+          {hotspots?.map((hotspot) => (
+            <div 
+              key={hotspot.id}
+              class="hotspot-marker" 
+              style={`left: ${hotspot.coordinates.x}px; top: ${hotspot.coordinates.y}px;`}
+              data-hotspot-id={hotspot.id}
+              data-product-id={hotspot.products?.id}
+              data-product-name={hotspot.products?.name}
+              data-product-price={hotspot.products?.price}
+            ></div>
+          ))}
+          
+          {/* Popup for each hotspot */}
+          {hotspots?.map((hotspot) => (
+            <div 
+              key={`popup-${hotspot.id}`}
+              id={`popup-${hotspot.id}`}
+              class="hotspot-popup"
+            >
+              <div class="bg-gray-200 border-2 border-dashed rounded-lg w-full h-32 mb-2" />
+              <h3 class="font-semibold text-gray-800">{hotspot.products?.name}</h3>
+              <p class="text-amber-700 font-bold">Rp{hotspot.products?.price?.toLocaleString('id-ID')}</p>
+              <div class="mt-2 flex space-x-2">
+                <a 
+                  href={`/products/${hotspot.products?.id}`} 
+                  class="text-xs bg-amber-700 text-white py-1 px-2 rounded hover:bg-amber-800 transition-colors"
+                >
+                  View Details
+                </a>
+                <button 
+                  class="text-xs border border-amber-700 text-amber-700 py-1 px-2 rounded hover:bg-amber-50 transition-colors"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        <div class="mt-8">
+          <h2 class="text-2xl font-bold text-amber-900 mb-4">Featured Items</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {hotspots?.map((hotspot) => (
+              <a 
+                href={`/products/${hotspot.products?.id}`} 
+                class="product-card flex flex-col"
+              >
+                <div class="bg-gray-200 border-2 border-dashed rounded-lg w-full h-32 mb-2" />
+                <div class="p-2 flex-grow">
+                  <h3 class="text-sm font-semibold text-gray-800 truncate">{hotspot.products?.name}</h3>
+                  <p class="text-amber-700 font-bold text-sm">Rp{hotspot.products?.price?.toLocaleString('id-ID')}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Related galleries -->
+      {relatedGalleries && relatedGalleries.length > 0 && (
+        <div class="mt-16 max-w-7xl mx-auto">
+          <h2 class="text-2xl font-bold text-amber-900 mb-6">More Looks</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {relatedGalleries.map((relatedGallery) => (
+              <a 
+                href={`/lookbooks/${relatedGallery.id}`} 
+                class="product-card group"
+              >
+                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-full h-48" />
+                <div class="p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
+                    {relatedGallery.title}
+                  </h3>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </main>
+
+    <footer class="bg-amber-100 py-6 px-6 text-center text-gray-600">
+      <p>&copy; 2025 WIDI Furniture. All rights reserved.</p>
+    </footer>
+    
+    <script>
+      // Handle hotspot interactions
+      document.querySelectorAll('.hotspot-marker').forEach(marker => {
+        marker.addEventListener('mouseenter', function() {
+          const hotspotId = this.getAttribute('data-hotspot-id');
+          const popup = document.getElementById(`popup-${hotspotId}`);
+          if (popup) {
+            popup.classList.add('visible');
+            
+            // Position the popup near the marker
+            const markerRect = this.getBoundingClientRect();
+            const popupRect = popup.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            
+            // Position the popup to the right of the marker, or to the left if it would go off screen
+            let leftPos = markerRect.left + scrollLeft + 30; // 30px to the right
+            if (leftPos + popupRect.width > window.innerWidth) {
+              leftPos = markerRect.left + scrollLeft - popupRect.width - 30; // 30px to the left
+            }
+            
+            popup.style.top = `${markerRect.top + scrollTop - popupRect.height / 2}px`;
+            popup.style.left = `${leftPos}px`;
+          }
+        });
+        
+        marker.addEventListener('mouseleave', function() {
+          const hotspotId = this.getAttribute('data-hotspot-id');
+          const popup = document.getElementById(`popup-${hotspotId}`);
+          if (popup) {
+            popup.classList.remove('visible');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
