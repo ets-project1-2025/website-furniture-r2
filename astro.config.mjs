@@ -10,6 +10,8 @@ export default defineConfig({
       configFile: './tailwind.config.cjs',
     }),
   ],
-  output: 'server',
-  adapter: vercel(),
+  output: 'server', // Kita kembali ke mode server karena kita membutuhkan SSR
+  adapter: vercel({
+    runtime: 'nodejs18.x', // Menentukan runtime secara eksplisit
+  }),
 });
