@@ -1,17 +1,16 @@
----
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../../../lib/supabaseClient';
 
-// Get the current session
-const { data: { session } } = await supabase.auth.getSession();
+export async function POST({ request }) {
+  // Get the current session
+  const { data: { session } } = await supabase.auth.getSession();
 
-if (!session) {
-  return new Response(
-    JSON.stringify({ error: 'User not authenticated' }),
-    { status: 401, headers: { 'Content-Type': 'application/json' } }
-  );
-}
+  if (!session) {
+    return new Response(
+      JSON.stringify({ error: 'User not authenticated' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 
-if (request.method === 'POST') {
   const body = await request.json();
   const { product_id } = body;
 
@@ -73,7 +72,19 @@ if (request.method === 'POST') {
     JSON.stringify(result),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
-} else if (request.method === 'DELETE') {
+}
+
+export async function DELETE({ request }) {
+  // Get the current session
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    return new Response(
+      JSON.stringify({ error: 'User not authenticated' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   const body = await request.json();
   const { wishlist_id } = body;
 
@@ -102,12 +113,6 @@ if (request.method === 'POST') {
     JSON.stringify({ message: 'Removed from wishlist' }),
     { status: 200, headers: { 'Content-Type': 'application/json' } }
   );
-} else {
-  return new Response(
-    JSON.stringify({ error: 'Method not allowed' }),
-    { status: 405, headers: { 'Content-Type': 'application/json' } }
-  );
 }
----
 
-// This is an API endpoint in Astro, no UI needed
+// Astro API routes export handler functions for different HTTP methods
