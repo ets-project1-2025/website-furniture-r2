@@ -1,0 +1,76 @@
+---
+import { supabase } from '../../lib/supabaseClient';
+
+// Get all active lookbook galleries
+const { data: galleries, error } = await supabase
+  .from('lookbook_galleries')
+  .select('id, title, description, cover_image_url')
+  .eq('is_active', true)
+  .order('created_at', { ascending: false });
+
+if (error) {
+  console.error('Error fetching lookbook galleries:', error);
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Lookbooks | WIDI Furniture</title>
+    <meta name="description" content="Explore our Shop the Look collections">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/src/styles/global.css" />
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <header class="bg-amber-100 shadow-md py-4 px-6">
+      <nav class="flex justify-between items-center">
+        <a href="/" class="text-2xl font-bold text-amber-900">WIDI Furniture</a>
+        <ul class="flex space-x-6">
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/">Home</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/products">Products</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors font-semibold" href="/lookbooks">Lookbooks</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/about">About</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/contact">Contact</a></li>
+          <li><a class="text-gray-700 hover:text-amber-800 transition-colors" href="/login">Login</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="py-8 px-6 flex-grow">
+      <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold text-amber-900 mb-2">Shop the Look</h1>
+        <p class="text-gray-600 mb-8">Explore our curated collections and shop each piece</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {galleries?.map((gallery) => (
+            <a 
+              href={`/lookbooks/${gallery.id}`} 
+              class="product-card group"
+            >
+              <div class="bg-gray-200 border-2 border-dashed rounded-xl w-full h-64" />
+              <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-800 group-hover:text-amber-700 transition-colors">
+                  {gallery.title}
+                </h3>
+                <p class="text-gray-600 text-sm mt-2 line-clamp-2">
+                  {gallery.description?.substring(0, 100) + (gallery.description?.length > 100 ? '...' : '')}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+        
+        {(!galleries || galleries.length === 0) && (
+          <div class="text-center py-12">
+            <p class="text-gray-600 text-lg">No lookbook galleries available at the moment.</p>
+          </div>
+        )}
+      </div>
+    </main>
+
+    <footer class="bg-amber-100 py-6 px-6 text-center text-gray-600">
+      <p>&copy; 2025 WIDI Furniture. All rights reserved.</p>
+    </footer>
+  </body>
+</html>

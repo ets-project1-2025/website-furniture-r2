@@ -1,8 +1,8 @@
 import { defineMiddleware } from 'astro:middleware';
-import { supabase } from '../src/lib/supabaseClient';
+import { supabase } from './lib/supabaseClient';
 import { locales, defaultLocale } from './i18n/config';
 
-export const authMiddleware = defineMiddleware(async (context, next) => {
+export const onRequest = defineMiddleware(async (context, next) => {
   // Redirect to default locale if no locale is specified in the path
   const pathParts = context.url.pathname.split('/').filter(part => part !== '');
   const hasLocale = pathParts.length > 0 && locales[pathParts[0]];

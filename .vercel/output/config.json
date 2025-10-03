@@ -1,0 +1,115 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/categories/delete/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/categories/edit/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/categories/new/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/categories/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/logout/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/lookbooks/edit/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/lookbooks/new/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/lookbooks/([^/]+?)/hotspots/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/lookbooks/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/delete/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/edit/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/new/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/products/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/wishlist/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/lookbooks/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/lookbooks/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/products/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/products/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/profile/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/$",
+			"dest": "_render"
+		}
+	]
+}
