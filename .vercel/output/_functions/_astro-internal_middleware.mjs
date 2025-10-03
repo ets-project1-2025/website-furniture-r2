@@ -1,5 +1,5 @@
 import { d as defineMiddleware, s as sequence } from './chunks/index_zG0fFTjl.mjs';
-import { s as supabase } from './chunks/supabaseClient_DD_SplUw.mjs';
+import { s as supabase } from './chunks/supabaseClient_DdVNsowi.mjs';
 import { l as locales, d as defaultLocale } from './chunks/config_wYDGN0uF.mjs';
 import 'es-module-lexer';
 import './chunks/astro-designed-error-pages_CCSgdXEr.mjs';
@@ -16,12 +16,17 @@ const onRequest$1 = defineMiddleware(async (context, next) => {
     return context.redirect(newPath);
   }
   if (context.url.pathname.startsWith("/admin") || context.url.pathname.startsWith("/id/admin") || context.url.pathname.startsWith("/en/admin")) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return context.redirect("/login");
-    }
-    const { data: profile, error } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
-    if (error || !profile || profile.full_name !== "Admin") {
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        return context.redirect("/login");
+      }
+      const { data: profile, error: profileError } = await supabase.from("profiles").select("full_name").eq("id", session.user.id).single();
+      if (profileError || !profile || profile.full_name !== "Admin") {
+        return context.redirect("/");
+      }
+    } catch (error) {
+      console.error("Error in admin middleware:", error);
       return context.redirect("/");
     }
   }

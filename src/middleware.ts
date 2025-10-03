@@ -15,23 +15,29 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Periksa apakah path dimulai dengan /admin
   if (context.url.pathname.startsWith('/admin') || context.url.pathname.startsWith('/id/admin') || context.url.pathname.startsWith('/en/admin')) {
-    // Ambil sesi pengguna
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+      // Ambil sesi pengguna
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        // Jika tidak ada sesi atau terjadi error, arahkan ke halaman login
+        return context.redirect('/login');
+      }
 
-    if (!session) {
-      // Jika tidak ada sesi, arahkan ke halaman login
-      return context.redirect('/login');
-    }
+      // Periksa apakah pengguna adalah admin
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', session.user.id)
+        .single();
 
-    // Periksa apakah pengguna adalah admin
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', session.user.id)
-      .single();
-
-    if (error || !profile || profile.full_name !== 'Admin') {
-      // Jika bukan admin, arahkan ke homepage
+      if (profileError || !profile || profile.full_name !== 'Admin') {
+        // Jika bukan admin, arahkan ke homepage
+        return context.redirect('/');
+      }
+    } catch (error) {
+      console.error('Error in admin middleware:', error);
+      // Jika terjadi error, arahkan ke homepage
       return context.redirect('/');
     }
   }

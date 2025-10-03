@@ -2,7 +2,7 @@
 import { e as createComponent, f as createAstro, k as renderHead, h as addAttribute, r as renderTemplate } from '../../chunks/astro/server_Z03RFxYs.mjs';
 import 'kleur/colors';
 import 'clsx';
-import { s as supabase } from '../../chunks/supabaseClient_DD_SplUw.mjs';
+import { s as supabase } from '../../chunks/supabaseClient_DdVNsowi.mjs';
 export { renderers } from '../../renderers.mjs';
 
 const $$Astro = createAstro();
