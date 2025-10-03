@@ -8,30 +8,39 @@ const t = getMessages(locale);
 
 // Handle form submission
 if (Astro.request.method === 'POST') {
-  const formData = await Astro.request.formData();
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  
-  if (!error) {
-    // Check if user is an admin after login
-    const { data: { session } } = await supabase.auth.getSession();
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', session?.user.id!)
-      .single();
+  try {
+    const formData = await Astro.request.formData();
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
     
-    if (!profileError && profile && profile.full_name === 'Admin') {
-      return Astro.redirect(`/${locale}/admin`);
+    // Check if supabase client is properly initialized
+    if (!supabase || typeof supabase.auth?.signInWithPassword !== 'function') {
+      console.error('Supabase client not properly initialized');
     } else {
-      // If not an admin, sign out and show error
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (!error) {
+        // Check if user is an admin after login
+        const { data: { session } } = await supabase.auth.getSession();
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', session?.user.id!)
+          .single();
+        
+        if (!profileError && profile && profile.full_name === 'Admin') {
+          return Astro.redirect(`/${locale}/admin`);
+        } else {
+          // If not an admin, sign out and show error
+          await supabase.auth.signOut();
+        }
+      }
     }
+  } catch (error) {
+    console.error('Login error:', error);
   }
 }
 ---

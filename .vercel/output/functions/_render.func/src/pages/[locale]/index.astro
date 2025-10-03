@@ -6,8 +6,17 @@ import { supabase } from '../../lib/supabaseClient';
 const locale = Astro.url.pathname.startsWith('/en/') ? 'en' : 'id';
 const t = getMessages(locale);
 
-// Check session for user
-const { data: { session } } = await supabase.auth.getSession();
+// Check session for user with error handling
+let session = null;
+try {
+  if (supabase && typeof supabase.auth.getSession === 'function') {
+    const sessionResponse = await supabase.auth.getSession();
+    session = sessionResponse?.data?.session || null;
+  }
+} catch (error) {
+  console.error('Error getting session:', error);
+  session = null;
+}
 ---
 
 <html lang={locale}>
