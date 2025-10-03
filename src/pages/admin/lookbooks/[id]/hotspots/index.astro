@@ -1,0 +1,295 @@
+---
+import { supabase } from '../../../../lib/supabaseClient';
+
+// Get gallery ID from URL
+const galleryId = Astro.params.id;
+
+// Check if user is authenticated and has admin privileges
+const { data: { session } } = await supabase.auth.getSession();
+
+if (!session) {
+  // Redirect to login if not authenticated
+  return Astro.redirect('/login');
+}
+
+// Check if user is an admin
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('full_name')
+  .eq('id', session.user.id)
+  .single();
+
+if (!profile || profile.full_name !== 'Admin') {
+  // Redirect to homepage if not an admin
+  return Astro.redirect('/');
+}
+
+// Get gallery details
+const { data: gallery, error: galleryError } = await supabase
+  .from('lookbook_galleries')
+  .select('id, title, cover_image_url')
+  .eq('id', galleryId)
+  .single();
+
+if (galleryError || !gallery) {
+  // If gallery not found, redirect to galleries list
+  return Astro.redirect('/admin/lookbooks');
+}
+
+// Get all hotspots for this gallery
+const { data: hotspots, error: hotspotsError } = await supabase
+  .from('lookbook_hotspots')
+  .select(`
+    id, 
+    coordinates,
+    hotspot_label,
+    products(name)
+  `)
+  .eq('gallery_id', galleryId)
+  .order('created_at', { ascending: true });
+
+if (hotspotsError) {
+  console.error('Error fetching hotspots:', hotspotsError);
+}
+
+// Get all products for the form
+const { data: products, error: productsError } = await supabase
+  .from('products')
+  .select('id, name')
+  .eq('is_active', true)
+  .order('name');
+
+if (productsError) {
+  console.error('Error fetching products:', productsError);
+}
+
+// Handle form submission for new hotspot
+if (Astro.request.method === 'POST') {
+  const formData = await Astro.request.formData();
+  
+  const productId = formData.get('product_id') as string;
+  const hotspotLabel = formData.get('hotspot_label') as string;
+  const x = parseFloat(formData.get('x') as string);
+  const y = parseFloat(formData.get('y') as string);
+  
+  // Create coordinates object
+  const coordinates = { x, y };
+  
+  // Insert new hotspot
+  const { error: insertError } = await supabase
+    .from('lookbook_hotspots')
+    .insert([{
+      gallery_id: galleryId,
+      product_id: productId,
+      coordinates,
+      hotspot_label: hotspotLabel
+    }]);
+  
+  if (!insertError) {
+    // Refresh the page to show the new hotspot
+    return Astro.redirect(`/admin/lookbooks/${galleryId}/hotspots`);
+  } else {
+    console.error('Error creating hotspot:', insertError);
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Hotspots for {gallery.title} | Admin Dashboard | WIDI Furniture</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/src/styles/global.css" />
+    <style>
+      .hotspot-image-container {
+        position: relative;
+        display: inline-block;
+        margin: 20px 0;
+      }
+      
+      .hotspot-marker {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #f59e0b;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        box-shadow: 0 0 0 2px #fef3c7;
+      }
+      
+      .hotspot-marker:hover {
+        background-color: #d97706;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col bg-gray-100">
+    <header class="bg-amber-800 text-white py-4 px-6">
+      <nav class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+        <div>
+          <a href="/admin" class="mr-4 text-amber-200 hover:text-white">Dashboard</a>
+          <a href="/admin/lookbooks" class="mr-4 text-amber-200 hover:text-white">Lookbooks</a>
+          <a href="/" class="mr-4 text-amber-200 hover:text-white">Visit Site</a>
+          <a href="/admin/logout" class="text-amber-200 hover:text-white">Logout</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="py-8 px-6 flex-grow">
+      <div class="max-w-6xl mx-auto">
+        <div class="mb-6">
+          <a href={`/admin/lookbooks/edit/${galleryId}`} class="text-amber-700 hover:underline">&larr; Back to Gallery</a>
+        </div>
+        
+        <h2 class="text-3xl font-semibold text-amber-900 mb-6">Manage Hotspots for: {gallery.title}</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <!-- Image with hotspots -->
+          <div>
+            <h3 class="text-xl font-semibold text-amber-800 mb-4">Gallery Image</h3>
+            <div class="hotspot-image-container">
+              <img 
+                src={gallery.cover_image_url} 
+                alt={gallery.title} 
+                class="w-full h-auto rounded-lg shadow-md"
+                id="galleryImage"
+              />
+              {hotspots?.map((hotspot) => (
+                <div 
+                  class="hotspot-marker" 
+                  style={`left: ${hotspot.coordinates.x}px; top: ${hotspot.coordinates.y}px;`}
+                  title={`${hotspot.hotspot_label}: ${hotspot.products?.name}`}
+                ></div>
+              ))}
+            </div>
+          </div>
+          
+          <!-- Form to add new hotspot -->
+          <div>
+            <h3 class="text-xl font-semibold text-amber-800 mb-4">Add New Hotspot</h3>
+            <form method="POST" class="space-y-4 bg-white p-6 rounded-lg shadow-md">
+              <div>
+                <label for="product_id" class="block text-gray-700 mb-2">Product *</label>
+                <select 
+                  id="product_id" 
+                  name="product_id" 
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="">Select a product</option>
+                  {products?.map((product) => (
+                    <option key={product.id} value={product.id}>{product.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label for="hotspot_label" class="block text-gray-700 mb-2">Hotspot Label</label>
+                <input 
+                  type="text" 
+                  id="hotspot_label" 
+                  name="hotspot_label" 
+                  placeholder="e.g., Chair, Table, Lamp"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="x" class="block text-gray-700 mb-2">X Coordinate *</label>
+                  <input 
+                    type="number" 
+                    id="x" 
+                    name="x" 
+                    min="0"
+                    required
+                    placeholder="X position"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                
+                <div>
+                  <label for="y" class="block text-gray-700 mb-2">Y Coordinate *</label>
+                  <input 
+                    type="number" 
+                    id="y" 
+                    name="y" 
+                    min="0"
+                    required
+                    placeholder="Y position"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+              </div>
+              
+              <div class="text-sm text-gray-500">
+                <p>Click on the image to get coordinates (JavaScript implementation needed)</p>
+              </div>
+              
+              <button 
+                type="submit" 
+                class="w-full bg-amber-700 text-white py-2 px-4 rounded-md hover:bg-amber-800 transition-colors"
+              >
+                Add Hotspot
+              </button>
+            </form>
+          </div>
+        </div>
+        
+        <!-- List of existing hotspots -->
+        <div class="mt-12">
+          <h3 class="text-xl font-semibold text-amber-800 mb-4">Existing Hotspots</h3>
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-amber-100">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-amber-800 uppercase tracking-wider">Label</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-amber-800 uppercase tracking-wider">Product</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-amber-800 uppercase tracking-wider">Coordinates</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-amber-800 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                {hotspots?.map((hotspot) => (
+                  <tr key={hotspot.id}>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm font-medium text-gray-900">{hotspot.hotspot_label}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-500">{hotspot.products?.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="text-sm text-gray-500">X: {hotspot.coordinates.x}, Y: {hotspot.coordinates.y}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                      <a 
+                        href={`/admin/lookbooks/${galleryId}/hotspots/edit/${hotspot.id}`} 
+                        class="text-amber-600 hover:text-amber-900 mr-4"
+                      >
+                        Edit
+                      </a>
+                      <a 
+                        href={`/admin/lookbooks/${galleryId}/hotspots/delete/${hotspot.id}`} 
+                        class="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="bg-amber-800 text-white py-6 px-6 text-center">
+      <p>&copy; 2025 WIDI Furniture Admin. All rights reserved.</p>
+    </footer>
+  </body>
+</html>

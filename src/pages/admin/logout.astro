@@ -1,0 +1,10 @@
+---
+import { supabase } from '../lib/supabaseClient';
+import { redirect } from 'astro:middleware';
+
+// Sign out the user
+await supabase.auth.signOut();
+
+// Redirect to home page after logout
+redirect('/');
+---
