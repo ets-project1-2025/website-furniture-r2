@@ -1,6 +1,8 @@
 ---
 import { supabase } from '../../lib/supabaseClient';
 
+export const prerender = false;
+
 // Get the current session
 const { data: { session } } = await supabase.auth.getSession();
 

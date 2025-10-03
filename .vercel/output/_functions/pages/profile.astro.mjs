@@ -6,6 +6,7 @@ import { s as supabase } from '../chunks/supabaseClient_DdVNsowi.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro();
+const prerender = false;
 const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Index;
@@ -38,6 +39,7 @@ const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: $$Index,
   file: $$file,
+  prerender,
   url: $$url
 }, Symbol.toStringTag, { value: 'Module' }));
 
